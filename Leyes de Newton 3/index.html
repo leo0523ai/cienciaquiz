@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CienciaQuiz</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --accent: #14B8A6;
+            --success: #10B981;
+            --danger: #EF4444;
+            --bg-grad-start: #312E81;
+            --bg-grad-end: #4338CA;
+            --glass: rgba(255, 255, 255, 0.1);
+            --practice-color: #3B82F6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            background: linear-gradient(135deg, var(--bg-grad-start), var(--bg-grad-end));
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+            overflow: hidden; 
+        }
+
+        #app-container {
+            width: 100%;
+            height: 100%;
+            background: #f3f4f6;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .hidden { display: none !important; }
+        
+        /* --- Pantallas --- */
+        .screen {
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            animation: fadeIn 0.4s ease-out;
+        }
+        
+        .screen-centered {
+            justify-content: center; 
+            align-items: center;     
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Estilos Login --- */
+        .login-bg { background: linear-gradient(135deg, #1e1b4b, #312e81, #1e1b4b); color: white; }
+        
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            width: 100%;       
+            max-width: 400px;
+        }
+        
+        .input-group { margin-bottom: 1rem; text-align: left; position: relative; }
+        .input-label { display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.5rem; color: #a5b4fc; font-weight: bold; }
+        
+        .input-wrapper { position: relative; }
+        .input-field {
+            width: 100%;
+            padding: 12px 40px 12px 40px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(165, 180, 252, 0.3);
+            border-radius: 0.75rem;
+            color: white;
+            outline: none;
+            font-size: 1rem;
+        }
+        .icon-input { position: absolute; left: 12px; top: 12px; color: #818cf8; width: 20px; }
+        
+        .toggle-password {
+            position: absolute; right: 12px; top: 12px; cursor: pointer; color: #a5b4fc; width: 20px; height: 20px;
+        }
+
+        .btn-primary {
+            width: 100%; padding: 14px; border: none; border-radius: 0.75rem;
+            background: linear-gradient(to right, #2dd4bf, #059669);
+            color: white; font-weight: bold; font-size: 1rem; cursor: pointer;
+            margin-top: 20px;
+        }
+        .error-msg { background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); color: #fca5a5; padding: 10px; border-radius: 8px; font-size: 0.9rem; margin-top: 10px; display: flex; align-items: center; gap: 8px;}
+
+        /* --- Menú --- */
+        .menu-container {
+            background: white; border-radius: 1.5rem; padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center;
+            width: 100%; max-width: 400px;
+        }
+        .info-box { background-color: #F0F9FF; border-radius: 1rem; padding: 1.5rem; text-align: left; margin-bottom: 2rem; border: 1px solid #E0F2FE; }
+        .info-item { display: flex; align-items: start; margin-bottom: 1rem; color: #334155; font-size: 0.95rem; }
+        .info-icon { color: #3B82F6; margin-right: 12px; min-width: 20px; margin-top: 2px; }
+        .warning-text { color: #DC2626; font-weight: bold; }
+        .warning-icon { color: #DC2626; }
+
+        .btn-start-green {
+            background-color: #22C55E; color: white; font-weight: 800; font-size: 1.1rem;
+            padding: 16px; border-radius: 12px; width: 100%; border: none;
+            box-shadow: 0 4px 6px rgba(34, 197, 94, 0.3); text-transform: uppercase; cursor: pointer; margin-bottom: 15px;
+        }
+        .btn-practice {
+            background-color: white; color: var(--practice-color); font-weight: 700; font-size: 1rem;
+            padding: 12px; border-radius: 12px; width: 100%; border: 2px solid var(--practice-color); cursor: pointer;
+        }
+
+        /* --- Quiz --- */
+        .quiz-header { background: white; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex-shrink: 0; z-index: 10; }
+        .quiz-content { flex: 1; padding: 20px; overflow-y: auto; padding-bottom: 50px; }
+        
+        .timer-badge { background: white; border: 1px solid #e5e7eb; padding: 5px 15px; border-radius: 20px; font-family: monospace; font-size: 1.2rem; font-weight: bold; display: inline-flex; align-items: center; gap: 5px; margin: 0 auto 15px auto; }
+        .timer-warning { color: var(--danger); animation: pulse 1s infinite; }
+        
+        .question-card { background: white; padding: 1.5rem; border-radius: 1rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        
+        .question-img { 
+            display: block; margin: 10px auto 15px auto;
+            border-radius: 0.75rem; border: 1px solid #e2e8f0;
+            object-fit: contain; background-color: #fff;
+            max-width: 100%; max-height: 25vh; width: auto; height: auto;
+            cursor: zoom-in;
+        }
+        .question-img:active { transform: scale(0.98); }
+
+        .zoom-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9);
+            z-index: 9999; display: flex; justify-content: center; align-items: center;
+            padding: 20px; cursor: zoom-out;
+        }
+        .zoom-img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 5px; }
+
+        .option-btn {
+            width: 100%; padding: 1rem; margin-bottom: 0.8rem;
+            background: white; border: 2px solid transparent; border-radius: 0.75rem;
+            text-align: left; font-size: 1rem; color: #4b5563;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center;
+        }
+        .option-text-container { display: flex; gap: 10px; align-items: center; }
+        .option-letter { font-weight: 800; color: var(--primary); min-width: 20px; }
+        
+        .correct { background: #d1fae5 !important; border-color: var(--success) !important; color: #065f46 !important; }
+        .incorrect { background: #fee2e2 !important; border-color: var(--danger) !important; color: #991b1b !important; }
+        .dimmed { opacity: 0.6; pointer-events: none; }
+
+        /* --- Resultados --- */
+        .result-card { background: white; border-radius: 1.5rem; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); width: 100%; max-width: 400px; margin: auto; }
+        .result-header { padding: 2rem; text-align: center; color: white; }
+        .bg-pass { background: var(--success); }
+        .bg-fail { background: var(--primary); }
+        .bg-practice { background: var(--practice-color); }
+        .score-big { font-size: 3rem; font-weight: 800; line-height: 1; margin-top: 10px; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.5rem; }
+        .stat-box { padding: 1rem; border-radius: 1rem; text-align: center; display: flex; flex-direction: column; align-items: center; }
+        .box-green { background: #ecfdf5; border: 1px solid #d1fae5; }
+        .box-red { background: #fef2f2; border: 1px solid #fee2e2; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .icon { width: 24px; height: 24px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+        .progress-track { width: 100%; height: 8px; background: #f3f4f6; border-radius: 4px; margin-top: 10px; overflow: hidden; }
+        .progress-bar { height: 100%; background: var(--accent); transition: width 0.5s ease; }
+    </style>
+</head>
+<body>
+
+<!-- MODAL PARA ZOOM -->
+<div id="zoomModal" class="zoom-modal hidden">
+    <img id="zoomImageContent" class="zoom-img" src="" alt="Zoom">
+</div>
+
+<div id="app-container">
+    
+    <!-- PANTALLA 1: LOGIN -->
+    <div id="screen-login" class="screen screen-centered login-bg">
+        <div class="glass-card text-center">
+            <h1 style="font-size: 2rem; margin-bottom: 5px; text-align: center; width: 100%;">CienciaQuiz</h1>
+            <p style="color: #a5b4fc; margin-bottom: 30px; text-align: center; width: 100%;">Evaluación de Ciencias</p>
+
+            <form id="loginForm" onsubmit="return false;">
+                <div class="input-group">
+                    <label class="input-label">Usuario</label>
+                    <div class="input-wrapper">
+                        <svg class="icon icon-input" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        <input type="text" id="usernameInput" class="input-field" placeholder="ej. juan.perez" autocomplete="off">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Contraseña</label>
+                    <div class="input-wrapper">
+                        <svg class="icon icon-input" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                        <input type="password" id="passwordInput" class="input-field" placeholder="••••••">
+                        <div class="toggle-password" onclick="togglePass()">
+                            <svg id="eyeIcon" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="loginError" class="error-msg hidden">
+                    <span id="errorText">Error</span>
+                </div>
+
+                <button type="button" id="btnLogin" class="btn-primary" style="margin-top: 20px;">Ingresar</button>
+            </form>
+            <!-- PIE DE PÁGINA DEL CREADOR -->
+<div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2); text-align: center; width: 100%;">
+    <p style="font-size: 0.85rem; color: #e0e7ff; margin: 0; font-weight: 500;">
+        App Web Desarrollada por <br> <span style="color: #2dd4bf;">Leonardo Gil</span>
+    </p>
+    <p style="font-size: 0.7rem; color: #a5b4fc; margin-top: 5px; opacity: 0.8;">
+        Derechos Reservados © 2026
+    </p>
+</div>
+        </div>
+    </div>
+
+    <!-- PANTALLA 2: MENÚ -->
+    <div id="screen-menu" class="screen screen-centered hidden" style="background: #fff; padding: 20px;">
+        <div class="menu-container">
+            <h2 class="menu-title">¡Bienvenido, <span id="displayStudentName" style="color: var(--primary); font-weight: 800;">Estudiante</span>!</h2>
+            
+            <div class="info-box">
+                <div class="info-item">
+                    <svg class="icon info-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+                    <span><strong>Preguntas</strong> de selección simple.</span>
+                </div>
+                <div class="info-item">
+                    <svg class="icon info-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42C16.07 4.74 14.12 4 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
+                    <span><strong>60 Segundos</strong> por pregunta.</span>
+                </div>
+                <div class="info-item">
+                    <svg class="icon info-icon warning-icon hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                    <span class="warning-text hidden">Solo tienes UNA oportunidad.</span>
+                </div>
+            </div>
+
+            <button id="btnStart" class="btn-start-green hidden">INICIAR PRUEBA</button>
+            <!-- Puedes agregar la clase 'hidden' para ocultar este botón temporalmente: class="btn-practice hidden" -->
+            <button id="btnPractice" class="btn-practice">PRACTICAR</button>
+        </div>
+    </div>
+
+    <!-- PANTALLA 3: QUIZ -->
+    <div id="screen-quiz" class="screen hidden" style="background: #f3f4f6; padding: 0;">
+        <div class="quiz-header">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.8rem; font-weight: bold; color: #9ca3af; letter-spacing: 1px;">PREGUNTA <span id="qCount">1</span>/<span id="qTotal">--</span></span>
+                
+                <!-- BOTONES DERECHA: MUTE + PUNTOS -->
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <!-- Botón Mute -->
+                    <button id="btnMute" onclick="toggleMute()" style="background: none; border: none; cursor: pointer; color: #6b7280; padding: 5px;">
+                        <!-- Icono Sonido Activado (Por defecto) -->
+                        <svg id="iconSoundOn" class="icon" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                        <!-- Icono Sonido Desactivado (Oculto) -->
+                        <svg id="iconSoundOff" class="icon hidden" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+                    </button>
+
+                    <div style="background: #e0e7ff; padding: 4px 10px; border-radius: 20px; color: var(--primary); font-weight: bold; font-size: 0.9rem;">
+                        <span id="scoreDisplay">0</span> pts
+                    </div>
+                </div>
+            </div>
+            <div class="progress-track"><div id="progressBar" class="progress-bar" style="width: 10%;"></div></div>
+        </div>
+
+        <div class="quiz-content">
+            <div id="practiceBadge" class="hidden" style="text-align: center; margin-bottom: 10px;">
+                <span style="background: #DBEAFE; color: #1E40AF; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">MODO PRÁCTICA</span>
+            </div>
+
+            <div style="text-align: center;">
+                <div id="timerBadge" class="timer-badge">
+                    <svg class="icon" style="width: 18px; height: 18px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span id="timeLeft">60</span>s
+                </div>
+            </div>
+
+            <div class="question-card">
+                <span style="background: #e0e7ff; color: var(--primary); font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold;">VALOR: <span id="qPoints">2</span> PTS</span>
+                <p id="qText" style="font-size: 1.1rem; font-weight: 500; color: #1f2937; margin-top: 10px; line-height: 1.5;">¿Pregunta?</p>
+                <img id="qImage" src="" class="question-img hidden" alt="Referencia" onerror="this.classList.add('hidden'); document.getElementById('zoomHint').classList.add('hidden');">
+                <p id="zoomHint" class="hidden" style="text-align: center; font-size: 0.7rem; color: #9ca3af; margin-top: 5px;">(Toca la imagen para ampliar)</p>
+            </div>
+
+            <div id="optionsContainer"></div>
+        </div>
+    </div>
+
+    <!-- PANTALLA 4: RESULTADOS -->
+    <div id="screen-results" class="screen screen-centered hidden" style="background: #f3f4f6;">
+        <div class="result-card">
+            <div id="resultHeader" class="result-header bg-pass">
+                <div id="resultIconContainer" style="background: rgba(255,255,255,0.2); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
+                    <svg class="icon" style="width: 40px; height: 40px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <h2 id="resultTitle" style="font-size: 1.3rem; font-weight: bold; margin-bottom: 5px; line-height: 1.3;">¡Felicidades!</h2>
+                <p id="resultMsg" style="opacity: 0.9; margin-top: 10px;">Has completado la prueba.</p>
+            </div>
+            
+            <div style="padding: 20px; text-align: center;">
+                <span style="font-size: 0.8rem; font-weight: bold; color: #9ca3af; letter-spacing: 1px;">PUNTUACIÓN FINAL</span>
+                <div class="score-big"><span id="finalScore">0</span><span style="font-size: 1.5rem; color: #9ca3af; font-weight: 400;">/<span id="maxScore">20</span></span></div>
+                
+                <div class="stats-grid">
+                    <div class="stat-box box-green">
+                        <span id="correctCount" style="font-size: 1.5rem; font-weight: bold; color: #065f46;">0</span>
+                        <span style="font-size: 0.7rem; color: #059669; font-weight: bold; text-transform: uppercase;">Correctas</span>
+                    </div>
+                    <div class="stat-box box-red">
+                        <span id="incorrectCount" style="font-size: 1.5rem; font-weight: bold; color: #991b1b;">0</span>
+                        <span style="font-size: 0.7rem; color: #dc2626; font-weight: bold; text-transform: uppercase;">Incorrectas</span>
+                    </div>
+                </div>
+
+                <div id="footerResult" style="margin-top: 20px;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PANTALLA BLOQUEADA -->
+    <div id="screen-locked" class="screen screen-centered hidden" style="background: #f3f4f6;">
+        <div class="result-card" style="text-align: center;">
+            <div style="background: #fee2e2; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto;">
+                <svg class="icon" style="color: var(--danger); width: 40px; height: 40px;" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <h2 style="font-size: 1.5rem; font-weight: bold; color: #1f2937; margin-bottom: 10px;">Acceso Denegado</h2>
+            <p style="color: #6b7280;">El usuario <span id="lockedUser" style="font-weight:bold"></span> ya ha presentado esta prueba.</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- CONFIGURACIÓN ---
+    // URL DEL SCRIPT
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwgbvQ3P-5Yqe3nW8IgZU0_FQw88ZpOwX17AalclVYvtnkZYhfJ9SpbproFyrerfK0m/exec"; 
+    
+    // --- BANCO A: EXAMEN REAL ---
+    const QUESTIONS = [            
+        {id: 1, text: "¿Cuál ley de Newton establece que todo cuerpo permanece en su estado de reposo o de movimiento rectilíneo uniforme a menos que una fuerza neta actúe sobre él?", points: 2, options: ["Primera Ley (Ley de la Inercia)", "Segunda Ley (Ley Fundamental de la Dinámica)", "Tercera Ley (Ley de Acción y Reacción)", "Ley de Gravitación Universal"], answer: 0},
+        {id: 2, text: "Según Newton, la aceleración de un cuerpo es directamente proporcional a la fuerza neta aplicada e inversamente proporcional a su masa. ¿A cuál ley corresponde este enunciado?", points: 2, options: ["Primera Ley (Ley de la Inercia)", "Segunda Ley (Ley Fundamental de la Dinámica)", "Tercera Ley (Ley de Acción y Reacción)", "Ley de la Conservación de la Energía"], answer: 1},
+        {id: 3, text: "¿Cuál ley de Newton dice que cuando un cuerpo ejerce una fuerza (acción) sobre otro, este segundo ejerce simultáneamente una fuerza igual y de sentido opuesto (reacción) sobre el primero?", points: 2, options: ["Primera Ley (Ley de la Inercia)", "Segunda Ley (Ley Fundamental de la Dinámica)", "Tercera Ley (Ley de Acción y Reacción)", "Ley de Hooke"], answer: 2},
+        {id: 4, text: "Un autobús que viaja a velocidad constante frena repentinamente. Los pasajeros que iban de pie sienten que son lanzados hacia adelante, como si algo los empujara en la dirección en la que se movía el vehículo. ¿Qué ley de Newton explica esto?", points: 2, options: ["Primera Ley (Ley de Inercia)", "Segunda Ley (Ley Fundamental de la Dinámica)", "Tercera Ley (Ley de Acción y Reacción)", "Ley de Gravitación Universal"], answer: 0},
+        {id: 5, text: "Un niño aplica la misma fuerza para empujar dos objetos diferentes sobre el suelo liso del patio: una pelota liviana de fútbol y un pesado cajón de herramientas. Observa que la pelota adquiere una gran velocidad rápidamente, mientras que el cajón apenas logra moverse. ¿Qué ley de Newton explica esto?", points: 2, options: ["Primera Ley (Ley de Inercia)", "Segunda Ley (Ley Fundamental de la Dinámica)", "Tercera Ley (Ley de Acción y Reacción)", "Ley de la Conservación de la Energía"], answer: 1},
+        {id: 6, text: "Una persona sobre patines se coloca frente a una pared sólida. Al apoyar sus manos y empujar fuertemente la pared, observa que es ella, y no la pared, quien se mueve alejándose de esta. ¿Qué ley de Newton explica esto?", points: 2, options: ["Primera Ley (Ley de Inercia)", "Segunda Ley (Ley Fundamental de la Dinámica)", "Tercera Ley (Ley de Acción y Reacción)", "Ley de Hooke"], answer: 2},
+        {id: 7, text: "Identifique a qué ley de Newton pertenece la fórmula mostrada en la imagen.", image: "formula1.png", points: 2, options: ["Primera Ley (Ley de la Inercia)", "Segunda Ley (Ley Fundamental de la Dinámica)", "Tercera Ley (Ley de Acción y Reacción)", "Ley de Gravitación Universal"], answer: 1},
+        {id: 8, text: "Identifique a qué ley de Newton pertenece la fórmula mostrada en la imagen.", image: "formula2.png", points: 2, options: ["Tercera Ley (Ley de Acción y Reacción)", "Primera Ley (Ley de la Inercia)", "Segunda Ley (Ley Fundamental de la Dinámica)", "Ley de Hooke"], answer: 0},
+        {id: 9, text: "Identifique a qué ley de Newton pertenece la fórmula mostrada en la imagen.", image: "formula3.png", points: 2, options: ["Segunda Ley (Ley Fundamental de la Dinámica)", "Tercera Ley (Ley de Acción y Reacción)", "Primera Ley (Ley de la Inercia)", "Principio de Arquímedes"], answer: 2},
+        {id: 10, text: "¿Cómo se conoce también a la segunda ley de Newton?", points: 2, options: ["Ley de la inercia", "Ley fundamental de la dinámica", "Ley de acción y reacción", "Ley de la fuerza de la gravedad"], answer: 1}
+    ];
+
+    // --- BANCO B: PRÁCTICA ---
+    const PRACTICE_QUESTIONS = [
+       {id: 1, text: "Cuando un automóvil frena bruscamente, los pasajeros se mueven hacia adelante como si una fuerza los empujara. Esto se debe a que tienden a mantener su estado de movimiento original. ¿Qué ley de Newton describe este comportamiento?", points: 3, options: ["Primera Ley (Ley de la Inercia)", "Segunda Ley (Ley Fundamental de la Dinámica)", "Tercera Ley (Ley de Acción y Reacción)", "Ley de Gravitación Universal"], answer: 0},
+       {id: 2, text: "Si aplicamos la misma fuerza a dos bloques, uno de 5 kg y otro de 20 kg, el bloque de 5 kg adquiere una aceleración mayor. Esto se explica porque la aceleración es inversamente proporcional a la masa. ¿Qué ley de Newton establece esta relación?", points: 3, options: ["Primera Ley (Ley de la Inercia)", "Segunda Ley (Ley Fundamental de la Dinámica)", "Tercera Ley (Ley de Acción y Reacción)", "Ley de Hooke"], answer: 1},
+       {id: 3, text: "Al nadar, una persona empuja el agua hacia atrás con sus brazos y piernas, y como resultado, el agua empuja al nadador hacia adelante. Este par de fuerzas iguales y opuestas es un ejemplo de la:", points: 3, options: ["Primera Ley (Ley de la Inercia)", "Segunda Ley (Ley Fundamental de la Dinámica)", "Tercera Ley (Ley de Acción y Reacción)", "Ley de Arquímedes"], answer: 2},
+       {id: 4, text: "¿Por qué otro nombre se conoce comúnmente la primera ley de Newton?", points: 3, options: ["Ley de la Gravitación", "Ley de la Inercia", "Ley de la Aceleración", "Ley de la Conservación de la Energía"], answer: 1},
+       {id: 5, text: "¿Cómo se conoce también a la segunda ley de Newton?", points: 4, options: ["Ley de la inercia", "Ley fundamental de la dinámica", "Ley de acción y reacción", "Ley de gravitación"], answer: 1},
+       {id: 6, text: "¿Cuál es el nombre alternativo con el que también se identifica a la tercera ley de Newton?", points: 4, options: ["Ley del Equilibrio", "Ley de la Fuerza Neta", "Ley de Acción y Reacción", "Ley del Movimiento Perpetuo"], answer: 2}
+    ];
+
+    let currentQuestions = [];
+    let isPracticeMode = false;
+    let currentQIndex = 0;
+    let score = 0;
+    let correctCount = 0;
+    let incorrectCount = 0;
+    let timeLeft = 60;
+    let timerInterval = null;
+    let isAnswered = false;
+    
+    let currentUser = "";
+    let currentRealName = "";
+    let isMuted = false; // Variable para controlar el sonido
+
+    const screens = {
+        login: document.getElementById('screen-login'),
+        menu: document.getElementById('screen-menu'),
+        quiz: document.getElementById('screen-quiz'),
+        results: document.getElementById('screen-results'),
+        locked: document.getElementById('screen-locked')
+    };
+
+    // --- FUNCIÓN DE BARAJAR ---
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    // --- SONIDO NATIVO ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function toggleMute() {
+        isMuted = !isMuted;
+        const iconOn = document.getElementById('iconSoundOn');
+        const iconOff = document.getElementById('iconSoundOff');
+        const btn = document.getElementById('btnMute');
+
+        if (isMuted) {
+            iconOn.classList.add('hidden');
+            iconOff.classList.remove('hidden');
+            btn.style.color = "#EF4444"; // Rojo cuando está muteado
+        } else {
+            iconOn.classList.remove('hidden');
+            iconOff.classList.add('hidden');
+            btn.style.color = "#6b7280"; // Gris cuando está activo
+        }
+    }
+
+    function playTone(type) {
+        if (isMuted) return; // Si está silenciado, no hace nada
+
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+
+        if (type === 'correct') {
+            const playNote = (freq, offset) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, now + offset);
+                gain.gain.setValueAtTime(0, now + offset);
+                gain.gain.linearRampToValueAtTime(0.1, now + offset + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.15);
+                osc.start(now + offset);
+                osc.stop(now + offset + 0.2);
+            };
+            playNote(1046.50, 0);   
+            playNote(1318.51, 0.1); 
+
+        } else {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(65.41, now);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.linearRampToValueAtTime(0.08, now + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        }
+    }
+
+    function showScreen(name) {
+        Object.values(screens).forEach(s => s.classList.add('hidden'));
+        screens[name].classList.remove('hidden');
+    }
+
+    function togglePass() {
+        const input = document.getElementById('passwordInput');
+        input.type = input.type === "password" ? "text" : "password";
+    }
+
+    function activarPantallaCompleta() {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen().catch(err => console.log(err));
+        } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) {
+            elem.msRequestFullscreen();
+        }
+    }
+
+    function returnToMenu() {
+        currentQIndex = 0;
+        score = 0;
+        correctCount = 0;
+        incorrectCount = 0;
+        isAnswered = false;
+        showScreen('menu');
+    }
+
+    window.onload = () => {
+        localStorage.clear();
+        showScreen('login');
+        
+        // Configurar el Modal de Zoom
+        const zoomModal = document.getElementById('zoomModal');
+        const zoomContent = document.getElementById('zoomImageContent');
+        const qImage = document.getElementById('qImage');
+
+        qImage.onclick = function() {
+            if(this.src && !this.classList.contains('hidden')) {
+                zoomContent.src = this.src;
+                zoomModal.classList.remove('hidden');
+            }
+        };
+
+        zoomModal.onclick = function() {
+            zoomModal.classList.add('hidden');
+        };
+    };
+
+    // --- LOGIN ---
+    document.getElementById('btnLogin').addEventListener('click', () => {
+        activarPantallaCompleta();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const user = document.getElementById('usernameInput').value.trim();
+        const pass = document.getElementById('passwordInput').value.trim();
+        const btn = document.getElementById('btnLogin');
+        const errorText = document.getElementById('errorText');
+        const errorDiv = document.getElementById('loginError');
+
+        errorDiv.classList.add('hidden');
+
+        if (!user || !pass) {
+            errorText.innerText = "Completa usuario y contraseña";
+            errorDiv.classList.remove('hidden');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "Verificando...";
+
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ accion: "login", usuario: user, clave: pass })
+        })
+        .then(response => response.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerText = "Ingresar";
+            
+            if (data.status === "ok") {
+                currentUser = data.usuario;
+                currentRealName = data.nombre;
+                document.getElementById('displayStudentName').innerText = currentRealName.split(' ')[0];
+                showScreen('menu');
+            } else if (data.status === "bloqueado") {
+                document.getElementById('lockedUser').innerText = user;
+                showScreen('locked');
+            } else {
+                errorText.innerText = data.mensaje;
+                errorDiv.classList.remove('hidden');
+            }
+        })
+        .catch(error => {
+            btn.disabled = false;
+            btn.innerText = "Ingresar";
+            errorText.innerText = "Error de conexión";
+            errorDiv.classList.remove('hidden');
+            console.error(error);
+        });
+    });
+
+    // --- BOTONES MENÚ ---
+    document.getElementById('btnPractice').addEventListener('click', () => {
+        isPracticeMode = true;
+        // Barajar preguntas de práctica
+        currentQuestions = shuffleArray([...PRACTICE_QUESTIONS]);
+        document.getElementById('practiceBadge').classList.remove('hidden');
+        startQuiz();
+    });
+
+    document.getElementById('btnStart').addEventListener('click', () => {
+        isPracticeMode = false;
+        // Barajar preguntas de examen
+        currentQuestions = shuffleArray([...QUESTIONS]);
+        document.getElementById('practiceBadge').classList.add('hidden');
+        
+        const btn = document.getElementById('btnStart');
+        btn.disabled = true; btn.innerText = "INICIANDO..."; btn.style.opacity = "0.7";
+
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ accion: "inicio", usuario: currentUser, nombre: currentRealName })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === "ok") {
+                startQuiz();
+            } else {
+                alert("Error al iniciar sesión en el examen. Intenta de nuevo.");
+                btn.disabled = false;
+                btn.innerText = "INICIAR PRUEBA";
+                btn.style.opacity = "1";
+            }
+        })
+        .catch(err => {
+            alert("Necesitas internet para iniciar.");
+            btn.disabled = false;
+            btn.innerText = "INICIAR PRUEBA";
+            btn.style.opacity = "1";
+        });
+    });
+
+    // --- QUIZ ---
+    function startQuiz() {
+        currentQIndex = 0;
+        score = 0;
+        correctCount = 0;
+        incorrectCount = 0;
+        
+        document.getElementById('qTotal').innerText = currentQuestions.length;
+        
+        showScreen('quiz');
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        if (currentQIndex >= currentQuestions.length) {
+            finishQuiz();
+            return;
+        }
+
+        const q = currentQuestions[currentQIndex];
+        isAnswered = false;
+        timeLeft = 60;
+
+        document.getElementById('qCount').innerText = currentQIndex + 1;
+        document.getElementById('scoreDisplay').innerText = score;
+        document.getElementById('qPoints').innerText = q.points;
+        document.getElementById('qText').innerText = q.text;
+        
+        document.getElementById('timeLeft').innerText = timeLeft;
+        document.getElementById('progressBar').style.width = `${((currentQIndex) / currentQuestions.length) * 100}%`;
+
+        const imgEl = document.getElementById('qImage');
+        const zoomHint = document.getElementById('zoomHint');
+        
+        if (q.image) {
+            imgEl.src = q.image;
+            imgEl.classList.remove('hidden');
+            zoomHint.classList.remove('hidden');
+        } else {
+            imgEl.classList.add('hidden');
+            zoomHint.classList.add('hidden');
+            imgEl.src = "";
+        }
+
+        const container = document.getElementById('optionsContainer');
+        container.innerHTML = ''; 
+
+        // --- ALEATORIEDAD DE OPCIONES ---
+        let optionsWithIndex = q.options.map((opt, index) => {
+            return { text: opt, originalIndex: index };
+        });
+
+        optionsWithIndex = shuffleArray(optionsWithIndex);
+
+        const letters = ['A', 'B', 'C', 'D'];
+
+        optionsWithIndex.forEach((optObj, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            
+            btn.dataset.originalIndex = optObj.originalIndex;
+
+            const letter = letters[idx] || ''; 
+            btn.innerHTML = `
+                <div class="option-text-container">
+                    <span class="option-letter">${letter}.</span>
+                    <span>${optObj.text}</span>
+                </div>
+                <div class="icon-spot"></div>`;
+            
+            btn.onclick = () => handleAnswer(optObj.originalIndex, btn);
+            container.appendChild(btn);
+        });
+
+        startTimer();
+    }
+
+    function startTimer() {
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timeLeft').innerText = timeLeft;
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                playTone('wrong');
+                handleTimeOut();
+            }
+        }, 1000);
+    }
+
+    function handleTimeOut() {
+        isAnswered = true;
+        incorrectCount++;
+        showCorrectAnswer();
+    }
+
+    function handleAnswer(selectedOriginalIndex, btnElement) {
+        if (isAnswered) return;
+        isAnswered = true;
+        clearInterval(timerInterval);
+
+        const q = currentQuestions[currentQIndex];
+        const points = Number(q.points) || 0; 
+
+        if (selectedOriginalIndex === q.answer) {
+            score += points;
+            correctCount++;
+            playTone('correct');
+            btnElement.classList.add('correct');
+            btnElement.querySelector('.icon-spot').innerHTML = `<svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>`;
+        } else {
+            incorrectCount++;
+            playTone('wrong');
+            btnElement.classList.add('incorrect');
+            btnElement.querySelector('.icon-spot').innerHTML = `<svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+        }
+        
+        showCorrectAnswer();
+    }
+
+    function showCorrectAnswer() {
+        const q = currentQuestions[currentQIndex];
+        const buttons = document.querySelectorAll('.option-btn');
+        
+        buttons.forEach((btn) => {
+            btn.disabled = true;
+            const btnOriginalIndex = parseInt(btn.dataset.originalIndex);
+
+            if (btnOriginalIndex === q.answer) {
+                btn.classList.add('correct');
+                if(!btn.querySelector('svg')) { 
+                     btn.querySelector('.icon-spot').innerHTML = `<svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>`;
+                }
+            } else if (!btn.classList.contains('incorrect')) {
+                btn.classList.add('dimmed');
+            }
+        });
+
+        setTimeout(() => {
+            currentQIndex++;
+            loadQuestion();
+        }, 1500);
+    }
+
+    function finishQuiz() {
+        // 1. Calcular puntos ANTES de intentar enviar o mostrar nada
+        const totalPoints = currentQuestions.reduce((acc, q) => acc + (Number(q.points) || 0), 0);
+        const passed = score >= (totalPoints / 2);
+
+        // 2. ENVIAR DATOS A GOOGLE PRIMERO (Si es examen)
+        if (!isPracticeMode) {
+            console.log("Enviando notas...", currentUser, score);
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    accion: "guardar", 
+                    usuario: currentUser,
+                    nombre: currentRealName,
+                    puntuacion: score 
+                })
+            }).then(() => console.log("Nota enviada"))
+              .catch(e => console.error("Error envío silencioso:", e));
+        }
+
+        // 3. ACTUALIZAR INTERFAZ (Protegido con Try-Catch)
+        try {
+            document.getElementById('finalScore').innerText = score;
+            document.getElementById('maxScore').innerText = totalPoints;
+            document.getElementById('correctCount').innerText = correctCount;
+            document.getElementById('incorrectCount').innerText = incorrectCount;
+            
+            const header = document.getElementById('resultHeader');
+            const title = document.getElementById('resultTitle');
+            const msg = document.getElementById('resultMsg');
+            const footer = document.getElementById('footerResult');
+            const iconContainer = document.getElementById('resultIconContainer');
+
+            if (isPracticeMode) {
+            header.className = "result-header bg-practice"; // Mantiene fondo azul para diferenciar práctica
+            
+            // --- NUEVA LÓGICA PARA MENSAJES DE PRÁCTICA ---
+            if (passed) {
+                title.innerText = `¡Felicidades ${currentRealName}!`;
+                msg.innerText = "Has aprobado la práctica.";
+            } else {
+                title.innerText = "Sigue estudiando";
+                // AQUÍ ESTÁ EL CAMBIO: Agregamos el nombre antes de la frase
+                msg.innerText = `${currentRealName}, ¡tú puedes lograrlo!`;
+            }
+            // -----------------------------------------------
+
+            iconContainer.innerHTML = '<svg class="icon" style="width: 40px; height: 40px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+            footer.innerHTML = `<button onclick="returnToMenu()" class="btn-primary" style="background:#3B82F6">Volver al Menú</button>`;
+            } else {
+                if (passed) {
+                    header.className = "result-header bg-pass";
+                    title.innerText = `¡Felicidades ${currentRealName}!`; 
+                    msg.innerText = "Has aprobado la evaluación.";
+                    iconContainer.innerHTML = '<svg class="icon" style="width: 40px; height: 40px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+                } else {
+                    header.className = "result-header bg-fail";
+                    title.innerText = "Sigue estudiando";
+                    msg.innerText = `${currentRealName}, tú puedes lograrlo.`;
+                    iconContainer.innerHTML = '<svg class="icon" style="width: 40px; height: 40px;" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+                }
+                
+                footer.innerHTML = `<button disabled class="btn-primary" style="background:#9ca3af; cursor:not-allowed">Prueba Finalizada</button>`;
+            }
+
+            showScreen('results');
+        } catch (e) {
+            console.error("Error visual al finalizar:", e);
+            alert("Examen finalizado. Tu nota: " + score);
+            showScreen('results');
+        }
+    }
+</script>
+</body>
+</html>
